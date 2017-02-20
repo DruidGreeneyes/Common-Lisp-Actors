@@ -61,6 +61,10 @@ Creates a message sending thread which
   (with-slots (thread) self
     thread))
 
+
+(defun %next (message)
+  (second (member :next message)))
+
 ;; ----------------------------------------------------------------------------
 ;; The main which is started as a thread from the constructor I think that this
 ;; should be more of an internal function than a method (experiment with
@@ -70,11 +74,15 @@ Creates a message sending thread which
     (loop
        (thread-yield)
        (with-lock-held (lock)
-         (if (not (null messages))
-             (setf behav (apply behav
-                                (pop messages)))
-             (condition-wait cv lock ))
-         (unless behav (return))))))
+         (let ((res nil))
+           (if (null messages)
+               (condition-wait cv lock)
+               (let ((message (pop messages)))
+                 (let ((next (or (%next message)
+                                 (behav))))
+                   (setf res (apply behav message))
+                   (setf behav next))))
+           (unless behav (return res)))))))
 
 ;; ----------------------------------------------------------------------------
 ;; Create a behavior that can be attached to any actor
