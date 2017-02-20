@@ -96,8 +96,8 @@ Creates a message sending thread which
 ;; ----------------------------------------------------------------------------
 ;; Macro for creating actors with the behavior specified by body
 (defmacro defactor (name state vars &body body)
-  `(defun ,name (&key (self) ,@state)
-     (labels ((me ,(append vars `(&key (next #'me next-supplied-p)))
+  `(defun ,name (,@state &key (self))
+     (labels ((me (,@vars &key (next #'me next-supplied-p))
                 (if next-supplied-p
                     (setf next (curry next :self self)))
                 ,@body))
